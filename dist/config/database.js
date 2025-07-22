@@ -23,7 +23,6 @@ const connectDB = async () => {
             minPoolSize: 0, // Pas de connexion minimum
             // Options SSL/TLS pour résoudre les erreurs SSL
             tls: true, // Force TLS
-            tlsInsecure: false, // Garde la sécurité
             tlsAllowInvalidCertificates: false, // Certificats valides requis
             tlsAllowInvalidHostnames: false, // Hostnames valides requis
             // Options de retry et stabilité

@@ -21,7 +21,6 @@ export const connectDB = async () => {
       
       // Options SSL/TLS pour résoudre les erreurs SSL
       tls: true, // Force TLS
-      tlsInsecure: false, // Garde la sécurité
       tlsAllowInvalidCertificates: false, // Certificats valides requis
       tlsAllowInvalidHostnames: false, // Hostnames valides requis
       
