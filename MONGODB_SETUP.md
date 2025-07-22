@@ -1,6 +1,13 @@
 # Configuration MongoDB Atlas pour Render
 
-## 🚨 Résolution de l'erreur "Could not connect to any servers"
+## 🚨 Résolution des erreurs MongoDB courantes
+
+### Erreur "bufferMaxEntries is not supported"
+
+✅ **RÉSOLU** - Configuration mise à jour avec options compatibles :
+- Suppression de `bufferMaxEntries` (obsolète)
+- Suppression de `retryReads` (non supporté dans certaines versions)
+- Configuration simplifiée et robuste
 
 ### 1. Configuration IP Whitelist sur MongoDB Atlas
 
