@@ -29,42 +29,53 @@ UserSchema.pre('save', async function(next) {
 
 const User = mongoose.model('User', UserSchema);
 
-async function createAdmin() {
+async function createSecondAdmin() {
   try {
     // Connexion à la base de données
     await mongoose.connect(process.env.MONGO_URI);
     console.log('Connecté à MongoDB');
 
-    // Vérifier si un admin existe déjà
-    const existingAdmin = await User.findOne({ email: 'admin@truenumber.com' });
+    // Vérifier si cet admin existe déjà
+    const existingAdmin = await User.findOne({ email: 'admin2@truenumber.com' });
     if (existingAdmin) {
-      console.log('Un administrateur existe déjà avec cet email.');
+      console.log('Un administrateur existe déjà avec cet email: admin2@truenumber.com');
       process.exit(0);
     }
 
-    // Créer un nouvel administrateur
-    const admin = new User({
-      name: 'Administrator',
-      username: 'admin',
-      email: 'admin@truenumber.com',
-      phone: '+1234567890',
-      password: 'admin123456', // Sera hashé automatiquement
+    // Vérifier si le username existe déjà
+    const existingUsername = await User.findOne({ username: 'admin2' });
+    if (existingUsername) {
+      console.log('Un utilisateur existe déjà avec ce nom d\'utilisateur: admin2');
+      process.exit(0);
+    }
+
+    // Créer le deuxième administrateur
+    const admin2 = new User({
+      name: 'Second Administrator',
+      username: 'admin2',
+      email: 'admin2@truenumber.com',
+      phone: '+1234567891',
+      password: 'admin2023', // Sera hashé automatiquement
       role: 'admin',
       balance: 10000
     });
 
-    await admin.save();
-    console.log('✅ Administrateur créé avec succès!');
-    console.log('📧 Email: admin@truenumber.com');
-    console.log('🔑 Password: admin123456');
-    console.log('👤 Username: admin');
+    await admin2.save();
+    console.log('✅ Deuxième administrateur créé avec succès!');
+    console.log('📧 Email: admin2@truenumber.com');
+    console.log('🔑 Password: admin2023');
+    console.log('👤 Username: admin2');
+    console.log('👨‍💼 Nom: Second Administrator');
     console.log('💰 Balance: 10000 points');
     
   } catch (error) {
-    console.error('❌ Erreur lors de la création de l\'administrateur:', error.message);
+    console.error('❌ Erreur lors de la création du deuxième administrateur:', error.message);
+    if (error.code === 11000) {
+      console.error('Erreur: Un utilisateur avec cet email ou username existe déjà.');
+    }
   } finally {
     mongoose.disconnect();
   }
 }
 
-createAdmin();
+createSecondAdmin();
