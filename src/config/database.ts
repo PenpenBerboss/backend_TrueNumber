@@ -8,36 +8,69 @@ export const connectDB = async () => {
   try {
     const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/mern-game';
     
-    // Configuration minimale mais robuste pour Render
+    // Configuration spéciale pour résoudre les problèmes SSL sur Render
     const options = {
-      // Timeouts essentiels
-      serverSelectionTimeoutMS: 10000, // 10 secondes pour sélectionner un serveur
-      connectTimeoutMS: 10000, // 10 secondes pour se connecter
-      socketTimeoutMS: 30000, // 30 secondes pour les opérations socket
+      // Timeouts plus longs pour Render
+      serverSelectionTimeoutMS: 30000, // 30 secondes pour sélectionner un serveur
+      connectTimeoutMS: 30000, // 30 secondes pour se connecter
+      socketTimeoutMS: 45000, // 45 secondes pour les opérations socket
       
-      // Pool de connexions
-      maxPoolSize: 5, // Maximum 5 connexions simultanées
-      minPoolSize: 1, // Minimum 1 connexion
+      // Pool de connexions optimisé pour Render
+      maxPoolSize: 3, // Réduction à 3 connexions max
+      minPoolSize: 0, // Pas de connexion minimum
       
-      // Autres options essentielles
+      // Options SSL/TLS pour résoudre les erreurs SSL
+      tls: true, // Force TLS
+      tlsInsecure: false, // Garde la sécurité
+      tlsAllowInvalidCertificates: false, // Certificats valides requis
+      tlsAllowInvalidHostnames: false, // Hostnames valides requis
+      
+      // Options de retry et stabilité
       retryWrites: true, // Retry automatique des écritures
+      retryReads: true, // Retry automatique des lectures
+      maxIdleTimeMS: 30000, // Ferme les connexions inactives
+      heartbeatFrequencyMS: 10000, // Heartbeat toutes les 10 secondes
+      
+      // Options de buffering pour éviter les timeouts
+      bufferCommands: false, // Désactive le buffering des commandes
     };
     
-    console.log('🔄 Connexion à MongoDB...');
+    console.log('🔄 Connexion sécurisée à MongoDB...');
+    console.log('🔐 Configuration SSL/TLS activée');
+    
     await mongoose.connect(mongoURI, options);
     
     console.log('✅ MongoDB connecté avec succès');
     console.log(`🔗 Host: ${mongoose.connection.host}`);
     console.log(`📂 Database: ${mongoose.connection.name}`);
+    console.log(`🔒 SSL Status: ${mongoose.connection.readyState === 1 ? 'Sécurisé' : 'En cours'}`);
     
   } catch (error) {
     console.error('❌ Erreur de connexion MongoDB:', error);
     
+    // Messages d'aide spécifiques selon l'erreur
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    if (errorMessage.includes('IP')) {
+      console.log('💡 Vérifiez la whitelist IP dans MongoDB Atlas');
+      console.log('💡 Ajoutez 0.0.0.0/0 pour autoriser Render');
+    }
+    
+    if (errorMessage.includes('SSL') || errorMessage.includes('TLS')) {
+      console.log('💡 Problème SSL détecté');
+      console.log('💡 Vérifiez votre URI MongoDB (doit commencer par mongodb+srv://)');
+    }
+    
+    if (errorMessage.includes('authentication')) {
+      console.log('💡 Vérifiez vos identifiants MongoDB');
+      console.log('💡 Username/Password dans Database Access');
+    }
+    
     if (process.env.NODE_ENV === 'production') {
-      console.log('🔄 Redémarrage dans 10 secondes...');
+      console.log('🔄 Redémarrage dans 15 secondes...');
       setTimeout(() => {
         process.exit(1);
-      }, 10000);
+      }, 15000);
     } else {
       process.exit(1);
     }
