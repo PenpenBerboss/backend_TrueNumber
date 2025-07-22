@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const database_1 = require("./config/database");
 const swagger_1 = require("./config/swagger");
 const auth_1 = __importDefault(require("./routes/auth"));
@@ -26,8 +27,11 @@ const history_1 = __importDefault(require("./routes/history"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
-// Connexion à la base de données MongoDB
-(0, database_1.connectDB)();
+// Connexion à la base de données MongoDB (non-bloquante)
+(0, database_1.connectDB)().catch(error => {
+    console.error('❌ Échec de la connexion initiale MongoDB:', error.message);
+    // Le serveur continue de fonctionner même si MongoDB n'est pas disponible au démarrage
+});
 // Configuration des middlewares
 app.use((0, cors_1.default)()); // Activation CORS pour les requêtes cross-origin
 app.use(express_1.default.json()); // Parsing automatique du JSON dans les requêtes
@@ -102,10 +106,42 @@ app.use('/api/balance', balance_1.default); // Consultation du solde
 app.use('/api/history', history_1.default); // Historique des parties
 // Endpoint de vérification de l'état du serveur
 app.get('/api/health', (req, res) => {
+    const mongoStatus = mongoose_1.default.connection.readyState;
+    const statusMap = {
+        0: 'disconnected',
+        1: 'connected',
+        2: 'connecting',
+        3: 'disconnecting'
+    };
+    const mongoStatusText = statusMap[mongoStatus] || 'unknown';
     res.json({
         message: 'Serveur backend opérationnel !',
         status: 'OK',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        database: {
+            status: mongoStatusText,
+            host: mongoose_1.default.connection.host || 'Non connecté'
+        }
+    });
+});
+// Endpoint spécifique pour le statut MongoDB
+app.get('/api/db-status', (req, res) => {
+    const mongoStatus = mongoose_1.default.connection.readyState;
+    const statusMap = {
+        0: 'disconnected',
+        1: 'connected',
+        2: 'connecting',
+        3: 'disconnecting'
+    };
+    const mongoStatusText = statusMap[mongoStatus] || 'unknown';
+    res.json({
+        database: {
+            status: mongoStatusText,
+            readyState: mongoStatus,
+            host: mongoose_1.default.connection.host || null,
+            name: mongoose_1.default.connection.name || null,
+            connected: mongoStatus === 1
+        }
     });
 });
 // Démarrage du serveur

@@ -11,6 +11,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import { connectDB } from './config/database';
 import { swaggerUi, specs } from './config/swagger';
 import authRoutes from './routes/auth';
@@ -25,8 +26,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connexion à la base de données MongoDB
-connectDB();
+// Connexion à la base de données MongoDB (non-bloquante)
+connectDB().catch(error => {
+  console.error('❌ Échec de la connexion initiale MongoDB:', error.message);
+  // Le serveur continue de fonctionner même si MongoDB n'est pas disponible au démarrage
+});
 
 // Configuration des middlewares
 app.use(cors()); // Activation CORS pour les requêtes cross-origin
@@ -110,10 +114,45 @@ app.use('/api/history', historyRoutes);  // Historique des parties
 
 // Endpoint de vérification de l'état du serveur
 app.get('/api/health', (req, res) => {
+  const mongoStatus = mongoose.connection.readyState;
+  const statusMap: { [key: number]: string } = {
+    0: 'disconnected',
+    1: 'connected', 
+    2: 'connecting',
+    3: 'disconnecting'
+  };
+  const mongoStatusText = statusMap[mongoStatus] || 'unknown';
+
   res.json({ 
     message: 'Serveur backend opérationnel !',
     status: 'OK',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    database: {
+      status: mongoStatusText,
+      host: mongoose.connection.host || 'Non connecté'
+    }
+  });
+});
+
+// Endpoint spécifique pour le statut MongoDB
+app.get('/api/db-status', (req, res) => {
+  const mongoStatus = mongoose.connection.readyState;
+  const statusMap: { [key: number]: string } = {
+    0: 'disconnected',
+    1: 'connected', 
+    2: 'connecting',
+    3: 'disconnecting'
+  };
+  const mongoStatusText = statusMap[mongoStatus] || 'unknown';
+
+  res.json({
+    database: {
+      status: mongoStatusText,
+      readyState: mongoStatus,
+      host: mongoose.connection.host || null,
+      name: mongoose.connection.name || null,
+      connected: mongoStatus === 1
+    }
   });
 });
 
