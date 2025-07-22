@@ -6,9 +6,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test:api": "node test-api.js",
-    "test:mongo": "node test-mongo.js",
-    "test:ssl": "node test-ssl.js"
+    "test:api": "node test-api.js"
   },
   "dependencies": {
     "@types/swagger-jsdoc": "^6.0.4",
