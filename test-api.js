@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = 'http://localhost:5000';
+const API_URL = 'http://localhost:5000/api';
 
 // Fonction utilitaire pour les requêtes HTTP
 async function apiRequest(endpoint, method = 'GET', data = null, token = null) {
-    const url = `${BASE_URL}${endpoint}`;
+    const url = endpoint.startsWith('/api') ? `${BASE_URL}${endpoint}` : `${API_URL}${endpoint}`;
     const options = {
         method,
         headers: {
@@ -36,6 +37,16 @@ async function runTests() {
     const testEmail = `test${Math.floor(Math.random() * 10000)}@example.com`;
     
     try {
+        // Test 0: Route racine
+        console.log('0. 🏠 Test Route Racine...');
+        const root = await apiRequest('/', 'GET', null, null);
+        console.log(`✅ ${root.message}\n`);
+        
+        // Test 0.1: Route API de base
+        console.log('0.1. 🔌 Test Route API de base...');
+        const apiBase = await apiRequest('/api', 'GET', null, null);
+        console.log(`✅ ${apiBase.message}\n`);
+        
         // Test 1: Health Check
         console.log('1. 🏥 Test Health Check...');
         const health = await apiRequest('/health');

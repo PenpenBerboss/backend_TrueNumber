@@ -3,14 +3,45 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllGameHistory = exports.deleteUser = exports.updateUser = exports.createUser = exports.getUserById = exports.getAllUsers = exports.getCurrentUser = void 0;
 const User_1 = require("../models/User");
 const GameHistory_1 = require("../models/GameHistory");
-// GET /api/users/me - Récupérer les informations de l'utilisateur connecté
-// Réponse : { "id": "...", "username": "...", "email": "...", "phone": "...", "role": "...", "balance": "..." }
+/**
+ * @swagger
+ * /api/users/me:
+ *   get:
+ *     summary: Récupérer les informations de l'utilisateur connecté
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Informations de l'utilisateur récupérées avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 username:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 phone:
+ *                   type: string
+ *                 role:
+ *                   type: string
+ *                 balance:
+ *                   type: number
+ *       404:
+ *         description: Utilisateur non trouvé
+ *       500:
+ *         description: Erreur serveur interne
+ */
 const getCurrentUser = async (req, res) => {
     try {
         const userId = req.user?.id;
         const user = await User_1.User.findById(userId).select('-password');
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
         }
         res.json({
             id: user.id,
@@ -22,13 +53,44 @@ const getCurrentUser = async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Get current user error:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        console.error('Erreur lors de la récupération de l\'utilisateur actuel:', error);
+        res.status(500).json({ message: 'Erreur serveur interne' });
     }
 };
 exports.getCurrentUser = getCurrentUser;
-// GET /api/users - Récupérer la liste de tous les utilisateurs (Admin seulement)
-// Réponse : [ { "id": "...", "username": "...", "email": "...", "phone": "...", "role": "..." }, ... ]
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Récupérer la liste de tous les utilisateurs (Admin seulement)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des utilisateurs récupérée avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   username:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                   phone:
+ *                     type: string
+ *                   role:
+ *                     type: string
+ *       403:
+ *         description: Accès refusé - Administrateur requis
+ *       500:
+ *         description: Erreur serveur interne
+ */
 const getAllUsers = async (req, res) => {
     try {
         const users = await User_1.User.find().select('-password').sort({ createdAt: -1 });
@@ -42,8 +104,8 @@ const getAllUsers = async (req, res) => {
         res.json(formattedUsers);
     }
     catch (error) {
-        console.error('Get all users error:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        console.error('Erreur lors de la récupération des utilisateurs:', error);
+        res.status(500).json({ message: 'Erreur serveur interne' });
     }
 };
 exports.getAllUsers = getAllUsers;

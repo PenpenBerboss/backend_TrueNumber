@@ -74,6 +74,16 @@ app.get('/docs', (req, res) => {
 
 // Route d'accueil avec informations sur l'API
 app.get('/', (req, res) => {
+  res.json({ message: 'TrueNumber API is running!' });
+});
+
+// Route API de base pour vérifier le fonctionnement
+app.get('/api', (req, res) => {
+  res.json({ message: 'API endpoint working!' });
+});
+
+// Route détaillée pour les informations complètes de l'API
+app.get('/api/info', (req, res) => {
   res.json({
     message: 'API TrueNumber Game - Documentation disponible',
     documentation: {

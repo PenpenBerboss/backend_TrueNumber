@@ -1,29 +1,49 @@
 "use strict";
+/**
+ * Contrôleur de jeu pour l'API TrueNumber Game
+ *
+ * Gère la logique du jeu de devinette de nombres avec :
+ * - Génération de nombres aléatoires
+ * - Système de tentatives et scoring
+ * - Gestion du solde utilisateur
+ * - Historique des parties
+ */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getGameHistory = exports.getBalance = exports.playGame = void 0;
 const User_1 = require("../models/User");
 const GameHistory_1 = require("../models/GameHistory");
+/**
+ * POST /api/game/play - Jouer une partie de TrueNumber
+ * Permet à un utilisateur authentifié de jouer au jeu de devinette
+ * @param req - Requête avec guess (nombre deviné) et utilisateur authentifié
+ * @param res - Réponse avec le résultat de la tentative
+ */
 const playGame = async (req, res) => {
     try {
         const userId = req.user.id;
         const user = await User_1.User.findById(userId);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({
+                message: 'Utilisateur non trouvé'
+            });
         }
+        // Vérification du solde minimum requis
         if (user.balance < 100) {
-            return res.status(400).json({ message: 'Insufficient balance. Minimum 100 points required to play.' });
+            return res.status(400).json({
+                message: 'Solde insuffisant. Minimum 100 points requis pour jouer.'
+            });
         }
-        // Generate random number between 1 and 100
+        // Génération d'un nombre aléatoire entre 1 et 100
         const randomNumber = Math.floor(Math.random() * 100) + 1;
-        // Game logic: Win if number is > 50, lose if <= 50
+        // Logique de jeu : Victoire si le nombre > 50, défaite si <= 50
         const isWin = randomNumber > 50;
         const result = isWin ? 'Gagné' : 'Perdu';
-        const pointsChange = isWin ? 200 : -100; // Win +200, Lose -100
+        const pointsChange = isWin ? 200 : -100; // Victoire +200, Défaite -100
         const newBalance = user.balance + pointsChange;
-        // Update user balance
+        // Mise à jour du solde utilisateur
         user.balance = newBalance;
         await user.save();
-        // Create game history record
+        // Création de l'enregistrement d'historique de partie
         const gameRecord = await GameHistory_1.GameHistory.create({
             userId: user.id,
             randomNumber: randomNumber,
@@ -31,56 +51,93 @@ const playGame = async (req, res) => {
             pointsChange,
             newBalance
         });
-        // Réponse selon les spécifications API : { "result": "gagné" | "perdu", "generatedNumber": 75, "newBalance": 125 }
+        // Réponse formatée selon les spécifications API
         res.json({
-            result: result.toLowerCase(), // "gagné" ou "perdu" en minuscules selon les specs
+            result: result.toLowerCase(), // "gagné" ou "perdu" en minuscules
             generatedNumber: randomNumber,
-            newBalance
+            newBalance,
+            message: isWin ?
+                `🎉 Félicitations ! Vous avez gagné ${pointsChange} points !` :
+                `😔 Dommage ! Vous perdez ${Math.abs(pointsChange)} points.`
         });
     }
     catch (error) {
-        console.error('Game play error:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        console.error('Erreur lors de la partie:', error);
+        res.status(500).json({
+            message: 'Erreur interne du serveur lors de la partie'
+        });
     }
 };
 exports.playGame = playGame;
+/**
+ * GET /api/balance - Récupérer le solde actuel de l'utilisateur
+ * @param req - Requête avec utilisateur authentifié
+ * @param res - Réponse avec le solde en points
+ */
 const getBalance = async (req, res) => {
     try {
         const userId = req.user.id;
         const user = await User_1.User.findById(userId);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({
+                message: 'Utilisateur non trouvé'
+            });
         }
         res.json({
-            balance: user.balance
+            balance: user.balance,
+            message: `Votre solde actuel est de ${user.balance} points`
         });
     }
     catch (error) {
-        console.error('Get balance error:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        console.error('Erreur lors de la récupération du solde:', error);
+        res.status(500).json({
+            message: 'Erreur interne du serveur lors de la récupération du solde'
+        });
     }
 };
 exports.getBalance = getBalance;
-// GET /api/history - Récupérer l'historique des parties jouées par l'utilisateur connecté
-// Réponse : [ { "gameId": "...", "date": "...", "generatedNumber": 50, "result": "perdu", "balanceChange": -35, "newBalance": 65 }, ... ]
+/**
+ * GET /api/history - Récupérer l'historique des parties de l'utilisateur connecté
+ * @param req - Requête avec utilisateur authentifié
+ * @param res - Liste des parties jouées avec détails
+ */
 const getGameHistory = async (req, res) => {
     try {
         const userId = req.user.id;
+        // Récupération de l'historique trié par date décroissante
         const history = await GameHistory_1.GameHistory.find({ userId }).sort({ createdAt: -1 });
-        // Formater la réponse selon les spécifications API
+        // Calcul des statistiques utilisateur
+        const totalGames = history.length;
+        const gamesWon = history.filter(game => game.result === 'Gagné').length;
+        const gamesLost = totalGames - gamesWon;
+        const winRate = totalGames > 0 ? (gamesWon / totalGames) * 100 : 0;
+        // Formatage de la réponse selon les spécifications API
         const formattedHistory = history.map(game => ({
             gameId: game.id,
             date: game.createdAt,
             generatedNumber: game.randomNumber,
-            result: game.result,
+            result: game.result.toLowerCase(), // "gagné" ou "perdu"
             balanceChange: game.pointsChange,
             newBalance: game.newBalance
         }));
-        res.json(formattedHistory);
+        res.json({
+            games: formattedHistory,
+            stats: {
+                totalGames,
+                gamesWon,
+                gamesLost,
+                winRate: Math.round(winRate * 10) / 10, // Arrondi à 1 décimale
+                message: totalGames === 0 ?
+                    'Aucune partie jouée pour le moment' :
+                    `${totalGames} partie${totalGames > 1 ? 's' : ''} jouée${totalGames > 1 ? 's' : ''}`
+            }
+        });
     }
     catch (error) {
-        console.error('Get game history error:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        console.error('Erreur lors de la récupération de l\'historique:', error);
+        res.status(500).json({
+            message: 'Erreur interne du serveur lors de la récupération de l\'historique'
+        });
     }
 };
 exports.getGameHistory = getGameHistory;

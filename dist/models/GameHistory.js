@@ -35,6 +35,10 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GameHistory = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
+/**
+ * Schéma MongoDB pour la collection d'historique des jeux
+ * Enregistre chaque partie jouée avec tous les détails pertinents
+ */
 const gameHistorySchema = new mongoose_1.Schema({
     userId: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -63,4 +67,8 @@ const gameHistorySchema = new mongoose_1.Schema({
 }, {
     timestamps: true
 });
+/**
+ * Modèle Mongoose pour la collection d'historique des jeux
+ * Exporte le modèle GameHistory configuré avec le schéma et l'interface IGameHistory
+ */
 exports.GameHistory = mongoose_1.default.model('GameHistory', gameHistorySchema);

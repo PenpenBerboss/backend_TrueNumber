@@ -39,6 +39,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+/**
+ * Schéma MongoDB pour la collection des utilisateurs
+ * Définit la structure et les validations pour les documents utilisateur
+ */
 const userSchema = new mongoose_1.Schema({
     name: {
         type: String,
@@ -79,7 +83,10 @@ const userSchema = new mongoose_1.Schema({
 }, {
     timestamps: true
 });
-// Hash password before saving
+/**
+ * Middleware pré-sauvegarde pour hasher le mot de passe
+ * Exécuté automatiquement avant chaque sauvegarde d'un document utilisateur
+ */
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password'))
         return next();
@@ -90,12 +97,20 @@ userSchema.pre('save', async function (next) {
         next();
     }
     catch (error) {
-        console.error('Error hashing password:', error);
+        console.error('Erreur lors du hashage du mot de passe:', error);
         next(error);
     }
 });
-// Compare password method
+/**
+ * Méthode d'instance pour comparer un mot de passe candidat avec le mot de passe hashé
+ * @param candidatePassword - Le mot de passe à vérifier
+ * @returns Promise<boolean> - true si les mots de passe correspondent
+ */
 userSchema.methods.comparePassword = async function (candidatePassword) {
     return bcryptjs_1.default.compare(candidatePassword, this.password);
 };
+/**
+ * Modèle Mongoose pour la collection des utilisateurs
+ * Exporte le modèle User configuré avec le schéma et l'interface IUser
+ */
 exports.User = mongoose_1.default.model('User', userSchema);
