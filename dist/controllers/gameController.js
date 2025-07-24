@@ -27,18 +27,20 @@ const playGame = async (req, res) => {
                 message: 'Utilisateur non trouvé'
             });
         }
-        // Vérification du solde minimum requis
-        if (user.balance < 100) {
+        // Vérification du solde minimum requis pour éviter un solde négatif excessif
+        if (user.balance < 0) {
             return res.status(400).json({
-                message: 'Solde insuffisant. Minimum 100 points requis pour jouer.'
+                message: 'Solde insuffisant pour jouer.'
             });
         }
-        // Génération d'un nombre aléatoire entre 1 et 100
-        const randomNumber = Math.floor(Math.random() * 100) + 1;
-        // Logique de jeu : Victoire si le nombre > 50, défaite si <= 50
-        const isWin = randomNumber > 50;
+        // Génération d'un nombre aléatoire entre 0 et 100
+        const randomNumber = Math.floor(Math.random() * 101); // 0 à 100 inclus
+        // Logique de jeu selon les spécifications exactes :
+        // - Si nombre ≤ 70 : Défaite (-35 points)
+        // - Si nombre > 70 : Victoire (+50 points)
+        const isWin = randomNumber > 70;
         const result = isWin ? 'Gagné' : 'Perdu';
-        const pointsChange = isWin ? 200 : -100; // Victoire +200, Défaite -100
+        const pointsChange = isWin ? 50 : -35; // Victoire +50, Défaite -35
         const newBalance = user.balance + pointsChange;
         // Mise à jour du solde utilisateur
         user.balance = newBalance;

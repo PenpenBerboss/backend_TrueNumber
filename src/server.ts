@@ -19,6 +19,7 @@ import gameRoutes from './routes/game';
 import userRoutes from './routes/users';
 import balanceRoutes from './routes/balance';
 import historyRoutes from './routes/history';
+// import adminRoutes from './routes/admin';
 
 // Chargement des variables d'environnement
 dotenv.config();
@@ -100,7 +101,8 @@ app.get('/api/info', (req, res) => {
       users: '/api/users', 
       game: '/api/game',
       balance: '/api/balance',
-      history: '/api/history'
+      history: '/api/history',
+      admin: '/api/admin'
     }
   });
 });
@@ -111,6 +113,7 @@ app.use('/api/users', userRoutes);       // Gestion des utilisateurs
 app.use('/api/game', gameRoutes);        // Logique du jeu TrueNumber
 app.use('/api/balance', balanceRoutes);  // Consultation du solde
 app.use('/api/history', historyRoutes);  // Historique des parties
+// app.use('/api/admin', adminRoutes);      // Administration (dashboard admin)
 
 // Endpoint de vérification de l'état du serveur
 app.get('/api/health', (req, res) => {

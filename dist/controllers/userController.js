@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllGameHistory = exports.deleteUser = exports.updateUser = exports.createUser = exports.getUserById = exports.getAllUsers = exports.getCurrentUser = void 0;
+exports.getAdminStats = exports.getAllGameHistory = exports.deleteUser = exports.updateUser = exports.createUser = exports.getUserById = exports.getAllUsers = exports.getCurrentUser = void 0;
 const User_1 = require("../models/User");
 const GameHistory_1 = require("../models/GameHistory");
 /**
@@ -96,10 +96,14 @@ const getAllUsers = async (req, res) => {
         const users = await User_1.User.find().select('-password').sort({ createdAt: -1 });
         const formattedUsers = users.map(user => ({
             id: user.id,
+            name: user.name,
             username: user.username,
             email: user.email,
             phone: user.phone,
-            role: user.role
+            role: user.role,
+            balance: user.balance,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
         }));
         res.json(formattedUsers);
     }
@@ -268,15 +272,101 @@ exports.deleteUser = deleteUser;
 const getAllGameHistory = async (req, res) => {
     try {
         const history = await GameHistory_1.GameHistory.find()
-            .populate('userId', 'name email')
+            .populate('userId', 'name email username')
             .sort({ createdAt: -1 });
-        res.json({
-            history
-        });
+        // Formater les données pour correspondre au format attendu par le frontend
+        const formattedHistory = history.map(game => ({
+            id: game.id,
+            playerName: game.userId ? game.userId.name || game.userId.username : 'Utilisateur Inconnu',
+            playerEmail: game.userId ? game.userId.email : 'email@inconnu.com',
+            targetNumber: game.randomNumber,
+            generatedNumber: game.randomNumber,
+            attempts: 1, // Dans votre jeu actuel, il n'y a qu'une tentative par partie
+            won: game.result === 'Gagné',
+            result: game.result.toLowerCase(),
+            score: game.newBalance,
+            balanceChange: game.pointsChange,
+            newBalance: game.newBalance,
+            createdAt: game.createdAt,
+            created_at: game.createdAt // Alternative naming pour compatibilité
+        }));
+        res.json(formattedHistory);
     }
     catch (error) {
-        console.error('Get all game history error:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        console.error('Erreur lors de la récupération de l\'historique global:', error);
+        res.status(500).json({ message: 'Erreur serveur interne' });
     }
 };
 exports.getAllGameHistory = getAllGameHistory;
+/**
+ * GET /api/admin/stats - Récupérer les statistiques d'administration
+ * Endpoint pour obtenir toutes les statistiques nécessaires au dashboard admin
+ */
+const getAdminStats = async (req, res) => {
+    try {
+        // Récupérer tous les utilisateurs et l'historique des parties
+        const [users, gameHistory] = await Promise.all([
+            User_1.User.find().select('-password'),
+            GameHistory_1.GameHistory.find().populate('userId', 'name email username')
+        ]);
+        // Calculer les statistiques
+        const totalUsers = users.length;
+        const totalGames = gameHistory.length;
+        const totalWins = gameHistory.filter(game => game.result === 'Gagné').length;
+        const totalLosses = totalGames - totalWins;
+        const winRate = totalGames > 0 ? (totalWins / totalGames) * 100 : 0;
+        // Calculer la moyenne des scores (balance finale)
+        const averageScore = totalGames > 0
+            ? gameHistory.reduce((sum, game) => sum + (game.newBalance || 0), 0) / totalGames
+            : 0;
+        // Utilisateurs actifs (dernière activité dans les 7 derniers jours)
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const activeUsers = users.filter(user => new Date(user.updatedAt) > weekAgo).length;
+        // Parties récentes (dernières 24h)
+        const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const recentGames = gameHistory.filter(game => new Date(game.createdAt) > dayAgo).length;
+        // Parties récentes formatées pour l'affichage
+        const recentGamesFormatted = gameHistory
+            .filter(game => new Date(game.createdAt) > dayAgo)
+            .slice(0, 10)
+            .map(game => ({
+            id: game.id,
+            playerName: game.userId ? game.userId.name || game.userId.username : 'Utilisateur Inconnu',
+            playerEmail: game.userId ? game.userId.email : 'email@inconnu.com',
+            targetNumber: game.randomNumber,
+            attempts: 1,
+            won: game.result === 'Gagné',
+            score: game.newBalance,
+            createdAt: game.createdAt
+        }));
+        res.json({
+            stats: {
+                totalUsers,
+                totalGames,
+                totalWins,
+                totalLosses,
+                winRate: Math.round(winRate * 10) / 10,
+                averageScore: Math.round(averageScore * 10) / 10,
+                activeUsers,
+                recentGames
+            },
+            recentGamesData: recentGamesFormatted,
+            users: users.map(user => ({
+                id: user.id,
+                name: user.name,
+                username: user.username,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                balance: user.balance,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt
+            }))
+        });
+    }
+    catch (error) {
+        console.error('Erreur lors de la récupération des statistiques admin:', error);
+        res.status(500).json({ message: 'Erreur serveur interne' });
+    }
+};
+exports.getAdminStats = getAdminStats;

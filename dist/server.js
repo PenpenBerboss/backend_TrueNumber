@@ -23,6 +23,7 @@ const game_1 = __importDefault(require("./routes/game"));
 const users_1 = __importDefault(require("./routes/users"));
 const balance_1 = __importDefault(require("./routes/balance"));
 const history_1 = __importDefault(require("./routes/history"));
+const admin_1 = __importDefault(require("./routes/admin"));
 // Chargement des variables d'environnement
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -94,7 +95,8 @@ app.get('/api/info', (req, res) => {
             users: '/api/users',
             game: '/api/game',
             balance: '/api/balance',
-            history: '/api/history'
+            history: '/api/history',
+            admin: '/api/admin'
         }
     });
 });
@@ -104,6 +106,7 @@ app.use('/api/users', users_1.default); // Gestion des utilisateurs
 app.use('/api/game', game_1.default); // Logique du jeu TrueNumber
 app.use('/api/balance', balance_1.default); // Consultation du solde
 app.use('/api/history', history_1.default); // Historique des parties
+app.use('/api/admin', admin_1.default); // Administration (dashboard admin)
 // Endpoint de vérification de l'état du serveur
 app.get('/api/health', (req, res) => {
     const mongoStatus = mongoose_1.default.connection.readyState;

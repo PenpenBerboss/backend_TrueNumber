@@ -78,7 +78,7 @@ const userSchema = new mongoose_1.Schema({
     },
     balance: {
         type: Number,
-        default: 100
+        default: 0
     }
 }, {
     timestamps: true

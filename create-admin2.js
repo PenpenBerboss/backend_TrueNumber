@@ -10,7 +10,7 @@ const UserSchema = new mongoose.Schema({
   phone: { type: String },
   password: { type: String, required: true },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
-  balance: { type: Number, default: 100 }
+  balance: { type: Number, default: 0 }
 }, { timestamps: true });
 
 // Hash password avant sauvegarde

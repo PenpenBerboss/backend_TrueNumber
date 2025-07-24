@@ -57,7 +57,7 @@ const userSchema = new Schema<IUser>({
   },
   balance: {
     type: Number,
-    default: 100
+    default: 0
   }
 }, {
   timestamps: true
